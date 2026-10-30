@@ -1,0 +1,528 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1.0" />
+<title>VisitBrief — Prototype</title>
+<style>
+  :root{
+    --bg:#FAF6F0; --card:#FFFFFF; --ink:#20242B; --inkSoft:#585F66;
+    --line:#E7E1D6; --teal:#3C6E67; --tealDark:#2C524D; --tealTint:#EDF3F1;
+    --indigo:#565B8C; --amber:#B98A3D; --amberTint:#FBF3E6;
+  }
+  * { box-sizing: border-box; }
+  html,body{ margin:0; padding:0; }
+  body{
+    background:var(--bg); color:var(--ink);
+    font-family:-apple-system,BlinkMacSystemFont,"Segoe UI",Helvetica,Arial,sans-serif;
+    -webkit-font-smoothing:antialiased;
+  }
+  .serif{ font-family:Georgia,"Iowan Old Style",serif; }
+  a,button{ font-family:inherit; }
+  button{ cursor:pointer; }
+  .wrap{ max-width:1152px; margin:0 auto; padding:0 20px; }
+  /* Safety strip */
+  .safety{
+    position:sticky; top:0; z-index:40; background:var(--tealDark); color:#fff;
+  }
+  .safety-inner{ display:flex; align-items:flex-start; gap:12px; padding:12px 0; }
+  .safety svg{ flex-shrink:0; margin-top:2px; opacity:.9; }
+  .safety p{ margin:0; font-size:13.5px; line-height:1.4; }
+  .safety b{ font-weight:600; }
+  /* Header */
+  .header{ padding:40px 0 24px; }
+  .header h1{ margin:0; font-size:32px; line-height:1.2; max-width:640px; }
+  .header p{ margin:12px 0 0; color:var(--inkSoft); font-size:15.5px; max-width:560px; }
+  @media(min-width:768px){ .header h1{ font-size:40px; } }
+  /* Section labels */
+  .section-label{ font-size:13px; font-weight:600; letter-spacing:.04em; text-transform:uppercase; color:var(--inkSoft); margin:0 0 12px; }
+  /* Goal selector */
+  .goal-grid{ display:grid; grid-template-columns:1fr; gap:12px; }
+  @media(min-width:640px){ .goal-grid{ grid-template-columns:1fr 1fr; } }
+  @media(min-width:1024px){ .goal-grid{ grid-template-columns:repeat(4,1fr); } }
+  .goal-card{
+    text-align:left; border-radius:10px; border:1px solid var(--line); background:var(--card);
+    padding:14px 16px; transition:all .15s ease; font-size:14.5px; line-height:1.4; color:var(--ink);
+  }
+  .goal-card:hover{ border-color:rgba(60,110,103,.4); }
+  .goal-card.active{ border-color:var(--teal); background:var(--tealTint); box-shadow:0 1px 2px rgba(0,0,0,.04); }
+  .goal-card.active .glabel{ color:var(--tealDark); font-weight:600; }
+  .goal-tag{ margin-top:8px; font-size:11.5px; color:var(--teal); font-weight:600; }
+  /* Context panel */
+  .ctx-panel{ margin-top:32px; border-radius:12px; border:1px solid var(--line); background:var(--card); padding:20px; }
+  .ctx-panel h2{ margin:0 0 4px; font-size:15px; }
+  .ctx-panel > p{ margin:0 0 16px; font-size:13px; color:var(--inkSoft); }
+  .ctx-grid{ display:grid; grid-template-columns:1fr; gap:12px; }
+  @media(min-width:640px){ .ctx-grid{ grid-template-columns:1fr 1fr; } }
+  @media(min-width:1024px){ .ctx-grid{ grid-template-columns:repeat(4,1fr); } }
+  .ctx-field{ border-radius:8px; background:var(--bg); border:1px solid var(--line); padding:10px 14px; }
+  .ctx-field label{ display:block; font-size:11px; text-transform:uppercase; letter-spacing:.03em; color:var(--inkSoft); margin-bottom:4px; }
+  .ctx-field input{
+    width:100%; background:transparent; border:none; border-bottom:1px solid transparent;
+    font-size:14px; font-weight:600; color:var(--ink); outline:none; padding:2px 0;
+  }
+  .ctx-field input:focus{ border-bottom-color:rgba(60,110,103,.5); }
+  /* Layout */
+  .layout{ margin-top:40px; padding-bottom:100px; display:flex; gap:24px; align-items:flex-start; }
+  .main-col{ flex:1; min-width:0; }
+  .card-grid{ display:grid; grid-template-columns:1fr; gap:16px; }
+  @media(min-width:768px){ .card-grid{ grid-template-columns:1fr 1fr; } }
+  @media(min-width:1280px){ .card-grid{ grid-template-columns:repeat(3,1fr); } }
+  /* Signal card */
+  .card{ border-radius:12px; border:1px solid var(--line); background:var(--card); padding:20px; display:flex; flex-direction:column; }
+  .card-top{ display:flex; align-items:flex-start; justify-content:space-between; gap:10px; }
+  .card-top h3{ margin:0; font-size:18px; line-height:1.3; padding-right:6px; }
+  .info-btn{ background:none; border:none; color:var(--inkSoft); padding:2px; margin-top:2px; }
+  .info-btn:hover{ color:var(--teal); }
+  .block-label{ font-size:11px; text-transform:uppercase; letter-spacing:.03em; font-weight:600; margin-bottom:5px; }
+  .label-teal{ color:var(--teal); }
+  .label-indigo{ color:var(--indigo); }
+  .label-soft{ color:var(--inkSoft); }
+  .label-amber{ color:var(--amber); }
+  .signal-text{ margin:0; font-size:14px; line-height:1.55; }
+  .snapshot-row{ display:flex; gap:8px; font-size:13.5px; margin-bottom:3px; }
+  .snapshot-n{ font-weight:700; color:var(--indigo); flex-shrink:0; }
+  .snapshot-label{ color:var(--inkSoft); }
+  .snapshot-note{ font-size:12px; color:var(--inkSoft); opacity:.85; font-style:italic; margin:6px 0 0; }
+  .subbox{ border-radius:8px; padding:12px 14px; margin-top:10px; }
+  .subbox.neutral{ background:var(--bg); border:1px solid var(--line); }
+  .subbox.warn{ background:var(--amberTint); border:1px solid rgba(185,138,61,.3); }
+  .subbox p{ margin:0; font-size:13px; line-height:1.5; color:var(--inkSoft); }
+  .subbox.warn p{ color:rgba(32,36,43,.85); }
+  .add-btn{
+    width:100%; margin-top:16px; display:flex; align-items:center; justify-content:center; gap:6px;
+    font-size:13.5px; font-weight:600; padding:11px 16px; border-radius:8px; border:none;
+    background:var(--tealDark); color:#fff; transition:background .15s;
+  }
+  .add-btn:hover{ background:var(--teal); }
+  .add-btn.added{ background:var(--tealTint); color:var(--tealDark); cursor:default; }
+  /* Agency controls */
+  .agency{ margin-top:16px; padding-top:14px; border-top:1px solid var(--line); }
+  .agency-row{ display:flex; flex-wrap:wrap; gap:8px; }
+  .pill{
+    display:inline-flex; align-items:center; gap:6px; font-size:12.5px; padding:6px 12px;
+    border-radius:999px; border:1px solid var(--line); background:transparent; color:var(--inkSoft);
+  }
+  .pill:hover{ border-color:rgba(60,110,103,.4); }
+  .pill.on-relevant{ border-color:var(--teal); background:var(--tealTint); color:var(--tealDark); }
+  .pill.on-notrelevant{ border-color:var(--amber); background:var(--amberTint); color:var(--amber); }
+  .pill.on-reported{ border-color:#f87171; background:#fef2f2; color:#dc2626; }
+  .agency-note{ margin:8px 0 0; font-size:12.5px; color:var(--inkSoft); }
+  /* Drawer */
+  .overlay{ position:fixed; inset:0; z-index:50; display:flex; justify-content:flex-end; }
+  .overlay-bg{ position:absolute; inset:0; background:rgba(32,36,43,.3); }
+  .drawer{ position:relative; width:100%; max-width:420px; background:var(--card); height:100%; box-shadow:-8px 0 24px rgba(0,0,0,.08); padding:24px; overflow-y:auto; }
+  .drawer h3{ margin:0; font-size:20px; }
+  .drawer-close{ position:absolute; top:20px; right:20px; background:none; border:none; color:var(--inkSoft); }
+  .drawer-sub{ margin:4px 0 24px; font-size:13px; color:var(--inkSoft); }
+  .reason-row{ display:flex; gap:10px; margin-bottom:14px; }
+  .dot{ width:8px; height:8px; border-radius:50%; margin-top:6px; flex-shrink:0; }
+  .dot.teal{ background:var(--teal); }
+  .dot.amber{ background:var(--amber); }
+  .reason-row p{ margin:0; font-size:14px; line-height:1.5; }
+  .drawer-footer{ margin-top:20px; border-radius:8px; background:var(--tealTint); border:1px solid rgba(60,110,103,.2); padding:12px 14px; }
+  .drawer-footer p{ margin:0; font-size:13px; color:var(--tealDark); font-weight:600; }
+  /* Visit brief */
+  .brief-desktop{ display:none; width:340px; flex-shrink:0; }
+  @media(min-width:1024px){ .brief-desktop{ display:block; } }
+  .brief-sticky{ position:sticky; top:80px; border-radius:12px; border:1px solid var(--line); background:var(--card); padding:20px; max-height:calc(100vh - 96px); overflow-y:auto; }
+  .brief-title{ margin:0; font-size:19px; }
+  .brief-ctx{ margin:4px 0 0; font-size:12.5px; color:var(--inkSoft); }
+  .brief-summary{ margin-top:16px; border-radius:8px; background:var(--bg); border:1px solid var(--line); padding:12px 14px; }
+  .brief-summary p{ margin:0; font-size:13px; font-style:italic; color:rgba(32,36,43,.8); line-height:1.5; }
+  .brief-section{ margin-top:20px; }
+  .qitem, .citem{ display:flex; align-items:flex-start; gap:8px; font-size:13.5px; border-radius:8px; padding:10px 12px; margin-bottom:8px; }
+  .qitem{ background:var(--bg); border:1px solid var(--line); }
+  .citem{ background:var(--tealTint); border:1px solid rgba(60,110,103,.2); font-weight:600; }
+  .qitem span, .citem span{ flex:1; line-height:1.4; }
+  .remove-x{ background:none; border:none; color:var(--inkSoft); margin-top:2px; flex-shrink:0; }
+  .remove-x:hover{ color:#dc2626; }
+  .brief-copy{ margin-top:20px; padding-top:16px; border-top:1px solid var(--line); }
+  .copy-btn{
+    width:100%; display:flex; align-items:center; justify-content:center; gap:8px;
+    background:var(--tealDark); color:#fff; font-size:14px; font-weight:600; padding:13px 16px;
+    border-radius:8px; border:none; transition:background .15s;
+  }
+  .copy-btn:hover{ background:var(--teal); }
+  /* Mobile brief */
+  .mobile-trigger{
+    display:flex; position:fixed; bottom:20px; right:20px; z-index:40; background:var(--tealDark); color:#fff;
+    border-radius:999px; padding:14px 20px; box-shadow:0 6px 18px rgba(0,0,0,.15); align-items:center; gap:8px;
+    font-size:13.5px; font-weight:600; border:none;
+  }
+  @media(min-width:1024px){ .mobile-trigger{ display:none; } }
+  .sheet-overlay{ display:flex; position:fixed; inset:0; z-index:50; align-items:flex-end; }
+  @media(min-width:1024px){ .sheet-overlay{ display:none !important; } }
+  .sheet{ position:relative; width:100%; background:var(--card); border-radius:16px 16px 0 0; padding:20px; max-height:85vh; overflow-y:auto; }
+  .sheet-handle{ display:flex; justify-content:center; margin-bottom:12px; }
+  .sheet-handle div{ width:40px; height:4px; border-radius:2px; background:var(--line); }
+  .sheet-close{ position:absolute; top:16px; right:16px; background:none; border:none; color:var(--inkSoft); }
+  /* Toast */
+  .toast{
+    position:fixed; bottom:24px; left:50%; transform:translateX(-50%); z-index:60; background:var(--ink); color:#fff;
+    font-size:13.5px; padding:12px 20px; border-radius:8px; box-shadow:0 6px 18px rgba(0,0,0,.2);
+  }
+  /* Footer */
+  .footer{ padding-bottom:40px; }
+  .footer p{ font-size:12px; color:rgba(88,95,102,.7); margin:0; }
+  .hidden{ display:none !important; }
+  .fade-in{ animation:fadeIn .2s ease-out; }
+  @keyframes fadeIn{ from{opacity:0; transform:translateY(6px);} to{opacity:1; transform:translateY(0);} }
+</style>
+</head>
+<body>
+
+<div class="safety">
+  <div class="wrap safety-inner">
+    <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.75" stroke-linecap="round" stroke-linejoin="round"><path d="M12 2l8 4v6c0 5-3.5 9-8 10-4.5-1-8-5-8-10V6l8-4z"/></svg>
+    <p><b>VisitBrief is for research and appointment preparation — not medical advice.</b> Do not start, stop, or change treatment based on community experiences. If you have urgent or severe symptoms, seek professional medical care.</p>
+  </div>
+</div>
+
+<div class="wrap header">
+  <h1 class="serif">Make sense of what patients share. Bring better questions to your next appointment.</h1>
+  <p>Explore structured community experiences alongside evidence context. VisitBrief does not diagnose or recommend treatment.</p>
+</div>
+
+<div class="wrap" style="margin-top:8px;">
+  <div class="section-label">What would be most useful today?</div>
+  <div class="goal-grid" id="goalGrid"></div>
+</div>
+
+<div class="wrap">
+  <div class="ctx-panel">
+    <h2>What should we consider?</h2>
+    <p>This context helps you judge relevance. It does not replace a clinical assessment.</p>
+    <div class="ctx-grid" id="ctxGrid"></div>
+  </div>
+</div>
+
+<div class="wrap layout">
+  <div class="main-col">
+    <div class="section-label">Community signals for Maya's goal</div>
+    <div class="card-grid" id="cardGrid"></div>
+  </div>
+
+  <aside class="brief-desktop">
+    <div class="brief-sticky" id="briefDesktop"></div>
+  </aside>
+</div>
+
+<button class="mobile-trigger" id="mobileTrigger">
+  <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.75" stroke-linecap="round" stroke-linejoin="round"><path d="M9 9h11v11H9zM5 15H4a1 1 0 01-1-1V4a1 1 0 011-1h11a1 1 0 011 1v1"/></svg>
+  <span id="mobileTriggerLabel">Visit brief (0)</span>
+</button>
+
+<div class="sheet-overlay hidden" id="sheetOverlay">
+  <div class="overlay-bg" id="sheetBg"></div>
+  <div class="sheet fade-in">
+    <div class="sheet-handle"><div></div></div>
+    <button class="sheet-close" id="sheetClose">
+      <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.75" stroke-linecap="round" stroke-linejoin="round"><path d="M18 6L6 18M6 6l12 12"/></svg>
+    </button>
+    <div id="briefMobile"></div>
+  </div>
+</div>
+
+<div class="overlay hidden" id="drawerOverlay">
+  <div class="overlay-bg" id="drawerBg"></div>
+  <div class="drawer fade-in" id="drawerContent"></div>
+</div>
+
+<div class="toast hidden" id="toast">Visit brief copied. Consider sharing it with your care team.</div>
+
+<div class="wrap footer">
+  <p>VisitBrief prototype · All patient stories, statistics, and clinical references shown are fictional demo content for evaluation purposes only.</p>
+</div>
+
+<script>
+/* ---------------- Mock Data (fictional, illustrative only) ---------------- */
+const GOALS = [
+  { id: "reduce-days", label: "Reduce the number of migraine days" },
+  { id: "side-effects", label: "Understand why an option may cause side effects" },
+  { id: "prepare-appt", label: "Prepare for a neurology appointment" },
+  { id: "lifestyle", label: "Explore lifestyle changes to discuss with my care team" },
+];
+const DEFAULT_GOAL = "prepare-appt";
+const DEFAULT_CONTEXT = {
+  duration: { label: "Living with migraine for", value: "4+ years" },
+  goal: { label: "Current goal", value: "Fewer severe migraine days" },
+  tried: { label: "What I've already tried", value: "3 approaches" },
+  appointment: { label: "Upcoming appointment", value: "Neurology · next week" },
+};
+const CARDS = [
+  {
+    id: "tracking",
+    topic: "Tracking patterns before changing a plan",
+    signal: "People with a similar goal often describe tracking frequency and severity for several weeks before deciding whether a change helped.",
+    snapshot: [
+      { n: 28, label: "described fewer disruptive days over time" },
+      { n: 11, label: "described no meaningful change" },
+      { n: 9, label: "stopped or changed approach because it did not fit their routine" },
+    ],
+    completeness: "Medium",
+    completenessNote: "Many experiences included symptom frequency, but few included other conditions, current medications, or clinician guidance.",
+    evidence: "Established practice for monitoring symptoms; whether a specific intervention is appropriate depends on your medical history.",
+    notApply: "Migraine patterns, medication interactions, pregnancy status, co-occurring conditions, and clinician guidance can materially change what is appropriate.",
+    relevanceReasons: { matchesGoal: "prepare for an appointment", matchesChallenge: "several approaches already tried", unknown: "medical history, medication interactions, or diagnosis details" },
+  },
+  {
+    id: "preventive",
+    topic: "Discussing preventive options with a clinician",
+    signal: "People preparing for a neurology visit often describe writing down specific questions about preventive options in advance, and note that clinicians respond well to a clear symptom history.",
+    snapshot: [
+      { n: 34, label: "felt more confident asking questions" },
+      { n: 14, label: "said their clinician needed more history than they had recorded" },
+      { n: 6, label: "felt rushed regardless of preparation" },
+    ],
+    completeness: "Medium–High",
+    completenessNote: "Many entries included appointment type and goal, but few included a full medication list or comorbid conditions.",
+    evidence: "Bringing a structured symptom history to a specialist visit is a commonly recommended practice in headache care; which preventive options are appropriate depends on diagnosis and history.",
+    notApply: "Prior diagnostic workup, medication history, comorbid conditions, and clinician specialty focus can change which preventive options are relevant to discuss.",
+    relevanceReasons: { matchesGoal: "prepare for an appointment", matchesChallenge: "several approaches already tried", unknown: "medical history, medication interactions, or diagnosis details" },
+  },
+  {
+    id: "trigger",
+    topic: "Building a realistic trigger-management routine",
+    signal: "People managing frequent migraines often describe testing sleep, hydration, and stress-related adjustments gradually rather than all at once, tracking which changes seemed to line up with fewer symptom days.",
+    snapshot: [
+      { n: 22, label: "noticed a possible link between one change and fewer days" },
+      { n: 17, label: "saw no clear pattern" },
+      { n: 13, label: "found tracking itself hard to sustain long-term" },
+    ],
+    completeness: "Low–Medium",
+    completenessNote: "Most entries described daily habits but rarely included hormonal cycles, sleep disorders, or other diagnoses.",
+    evidence: "Lifestyle-factor tracking is a widely used self-management approach; its relevance depends on individual trigger profile and other health conditions.",
+    notApply: "Hormonal patterns, sleep disorders, medication side effects, and co-occurring conditions can produce similar symptoms with different underlying causes.",
+    relevanceReasons: { matchesGoal: "explore lifestyle changes", matchesChallenge: "several approaches already tried", unknown: "medical history, medication interactions, or diagnosis details" },
+  },
+];
+const DEFAULT_QUESTIONS = [
+  "Given my symptom pattern and what I've tried, what options are medically appropriate for me?",
+  "What outcomes should I track to know whether a change is helping?",
+  "What risks, contraindications, or interactions should I understand before considering an option?",
+];
+
+/* ---------------- State ---------------- */
+let state = {
+  goal: DEFAULT_GOAL,
+  ctx: JSON.parse(JSON.stringify(DEFAULT_CONTEXT)),
+  briefCardIds: [],
+  questions: [...DEFAULT_QUESTIONS],
+  feedback: {},
+};
+
+const icon = (name) => {
+  const paths = {
+    info: '<circle cx="12" cy="12" r="10"/><path d="M12 16v-4M12 8h.01"/>',
+    close: '<path d="M18 6L6 18M6 6l12 12"/>',
+    check: '<path d="M20 6L9 17l-5-5"/>',
+    x: '<path d="M18 6L6 18M6 6l12 12"/>',
+    flag: '<path d="M4 3v18M4 4h13l-2.5 4L17 12H4"/>',
+    plus: '<path d="M12 5v14M5 12h14"/>',
+  };
+  return `<svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.75" stroke-linecap="round" stroke-linejoin="round">${paths[name]}</svg>`;
+};
+
+/* ---------------- Render functions ---------------- */
+function renderGoals() {
+  const el = document.getElementById('goalGrid');
+  el.innerHTML = GOALS.map(g => `
+    <button class="goal-card ${g.id === state.goal ? 'active' : ''}" data-goal="${g.id}">
+      <div class="glabel">${g.label}</div>
+      ${g.id === state.goal ? '<div class="goal-tag">Selected</div>' : ''}
+    </button>
+  `).join('');
+  el.querySelectorAll('.goal-card').forEach(btn => {
+    btn.addEventListener('click', () => { state.goal = btn.dataset.goal; renderGoals(); });
+  });
+}
+
+function renderContext() {
+  const el = document.getElementById('ctxGrid');
+  el.innerHTML = Object.entries(state.ctx).map(([key, f]) => `
+    <div class="ctx-field">
+      <label>${f.label}</label>
+      <input type="text" value="${f.value}" data-key="${key}" />
+    </div>
+  `).join('');
+  el.querySelectorAll('input').forEach(inp => {
+    inp.addEventListener('input', () => { state.ctx[inp.dataset.key].value = inp.value; renderBrief(); });
+  });
+}
+
+function renderCards() {
+  const el = document.getElementById('cardGrid');
+  el.innerHTML = CARDS.map(card => {
+    const added = state.briefCardIds.includes(card.id);
+    const fb = state.feedback[card.id];
+    return `
+    <div class="card fade-in">
+      <div class="card-top">
+        <h3 class="serif">${card.topic}</h3>
+        <button class="info-btn" data-drawer="${card.id}" title="Why am I seeing this?">${icon('info')}</button>
+      </div>
+      <div style="margin-top:12px;">
+        <div class="block-label label-teal">Community signal</div>
+        <p class="signal-text">${card.signal}</p>
+      </div>
+      <div style="margin-top:16px;">
+        <div class="block-label label-indigo">Experience snapshot</div>
+        ${card.snapshot.map(s => `<div class="snapshot-row"><span class="snapshot-n">${s.n}</span><span class="snapshot-label">${s.label}</span></div>`).join('')}
+        <p class="snapshot-note">These are self-reported experiences, not proof of cause and effect.</p>
+      </div>
+      <div class="subbox neutral">
+        <div class="block-label label-soft" style="margin-bottom:4px;">Context completeness: ${card.completeness}</div>
+        <p>${card.completenessNote}</p>
+      </div>
+      <div class="subbox neutral">
+        <div class="block-label label-soft" style="margin-bottom:4px;">Evidence context</div>
+        <p>${card.evidence}</p>
+      </div>
+      <div class="subbox warn">
+        <div class="block-label label-amber" style="margin-bottom:4px;">Why this may not apply to me</div>
+        <p>${card.notApply}</p>
+      </div>
+      <button class="add-btn ${added ? 'added' : ''}" data-add="${card.id}" ${added ? 'disabled' : ''}>
+        ${icon(added ? 'check' : 'plus')} ${added ? 'Added to visit brief' : 'Add to visit brief'}
+      </button>
+      <div class="agency">
+        <div class="agency-row">
+          <button class="pill ${fb === 'relevant' ? 'on-relevant' : ''}" data-fb="${card.id}" data-val="relevant">${icon('check')} This feels relevant</button>
+          <button class="pill ${fb === 'not-relevant' ? 'on-notrelevant' : ''}" data-fb="${card.id}" data-val="not-relevant">${icon('x')} Not relevant to me</button>
+          <button class="pill ${fb === 'reported' ? 'on-reported' : ''}" data-fb="${card.id}" data-val="reported">${icon('flag')} Report potentially harmful claim</button>
+        </div>
+        ${fb === 'not-relevant' ? `<p class="agency-note fade-in">We'll use this feedback to improve relevance. It will not change your medical care.</p>` : ''}
+        ${fb === 'reported' ? `<p class="agency-note fade-in">Thanks — flagged content is reviewed separately from your account and does not affect your medical care.</p>` : ''}
+      </div>
+    </div>
+    `;
+  }).join('');
+
+  el.querySelectorAll('[data-drawer]').forEach(btn => btn.addEventListener('click', () => openDrawer(btn.dataset.drawer)));
+  el.querySelectorAll('[data-add]').forEach(btn => btn.addEventListener('click', () => {
+    if (!state.briefCardIds.includes(btn.dataset.add)) state.briefCardIds.push(btn.dataset.add);
+    renderCards(); renderBrief();
+  }));
+  el.querySelectorAll('[data-fb]').forEach(btn => btn.addEventListener('click', () => {
+    const id = btn.dataset.fb, val = btn.dataset.val;
+    state.feedback[id] = state.feedback[id] === val ? null : val;
+    renderCards();
+  }));
+}
+
+function openDrawer(cardId) {
+  const card = CARDS.find(c => c.id === cardId);
+  const r = card.relevanceReasons;
+  document.getElementById('drawerContent').innerHTML = `
+    <button class="drawer-close" id="drawerCloseBtn">${icon('close')}</button>
+    <h3 class="serif">Why this may be relevant</h3>
+    <p class="drawer-sub">${card.topic}</p>
+    <div class="reason-row"><div class="dot teal"></div><p><strong>Matches the goal you selected:</strong> ${r.matchesGoal}</p></div>
+    <div class="reason-row"><div class="dot teal"></div><p><strong>Matches your noted challenge:</strong> ${r.matchesChallenge}</p></div>
+    <div class="reason-row"><div class="dot amber"></div><p><strong>Does not know:</strong> ${r.unknown}</p></div>
+    <div class="drawer-footer"><p>This is an exploratory signal, not a recommendation.</p></div>
+  `;
+  document.getElementById('drawerOverlay').classList.remove('hidden');
+  document.getElementById('drawerCloseBtn').addEventListener('click', closeDrawer);
+  document.getElementById('drawerBg').addEventListener('click', closeDrawer);
+}
+function closeDrawer() { document.getElementById('drawerOverlay').classList.add('hidden'); }
+
+function briefHTML() {
+  const briefCards = CARDS.filter(c => state.briefCardIds.includes(c.id));
+  const ctx = state.ctx;
+  const summary = `Maya is preparing to discuss persistent migraine symptoms, prior approaches, and a goal of reducing severe migraine days. This brief summarizes questions she chose — it does not provide medical advice.`;
+  return `
+    <h3 class="serif brief-title">Questions for your appointment</h3>
+    <p class="brief-ctx">Context: ${ctx.duration.value} · ${ctx.goal.value} · ${ctx.tried.value} · ${ctx.appointment.value}</p>
+    <div class="brief-summary"><p>${summary}</p></div>
+    <div class="brief-section">
+      <div class="block-label label-soft">Questions</div>
+      ${state.questions.map((q, i) => `
+        <div class="qitem"><span>${q}</span><button class="remove-x" data-rmq="${i}">${icon('close')}</button></div>
+      `).join('')}
+    </div>
+    ${briefCards.length ? `
+      <div class="brief-section">
+        <div class="block-label label-soft">Topics added</div>
+        ${briefCards.map(c => `
+          <div class="citem"><span>${c.topic}</span><button class="remove-x" data-rmc="${c.id}">${icon('close')}</button></div>
+        `).join('')}
+      </div>
+    ` : ''}
+    <div class="brief-copy">
+      <button class="copy-btn" id="copyBtn">📋 Copy visit brief</button>
+    </div>
+  `;
+}
+
+function attachBriefHandlers(container) {
+  container.querySelectorAll('[data-rmq]').forEach(btn => btn.addEventListener('click', () => {
+    state.questions.splice(parseInt(btn.dataset.rmq), 1); renderBrief();
+  }));
+  container.querySelectorAll('[data-rmc]').forEach(btn => btn.addEventListener('click', () => {
+    state.briefCardIds = state.briefCardIds.filter(id => id !== btn.dataset.rmc); renderBrief(); renderCards();
+  }));
+  const copyBtn = container.querySelector('#copyBtn');
+  if (copyBtn) copyBtn.addEventListener('click', handleCopy);
+}
+
+function renderBrief() {
+  const html = briefHTML();
+  const desktop = document.getElementById('briefDesktop');
+  const mobile = document.getElementById('briefMobile');
+  desktop.innerHTML = html;
+  mobile.innerHTML = html;
+  attachBriefHandlers(desktop);
+  attachBriefHandlers(mobile);
+  const total = state.questions.length + state.briefCardIds.length;
+  document.getElementById('mobileTriggerLabel').textContent = `Visit brief (${total})`;
+}
+
+function handleCopy() {
+  const briefCards = CARDS.filter(c => state.briefCardIds.includes(c.id));
+  const ctx = state.ctx;
+  const lines = [
+    "VisitBrief — Visit Brief (demo)",
+    "",
+    `Context: ${ctx.duration.value} living with migraine · Goal: ${ctx.goal.value} · Tried: ${ctx.tried.value} · Appointment: ${ctx.appointment.value}`,
+    "",
+    "Questions:",
+    ...state.questions.map((q, i) => `${i + 1}. ${q}`),
+  ];
+  if (briefCards.length) {
+    lines.push("", "Topics to raise:");
+    briefCards.forEach(c => lines.push(`- ${c.topic}`));
+  }
+  lines.push("", "This brief summarizes questions Maya chose — it does not provide medical advice.");
+  const text = lines.join("\n");
+  if (navigator.clipboard) { navigator.clipboard.writeText(text).catch(() => {}); }
+  showToast();
+}
+
+function showToast() {
+  const t = document.getElementById('toast');
+  t.classList.remove('hidden');
+  setTimeout(() => t.classList.add('hidden'), 2600);
+}
+
+/* ---------------- Mobile sheet ---------------- */
+document.getElementById('mobileTrigger').addEventListener('click', () => {
+  document.getElementById('sheetOverlay').classList.remove('hidden');
+});
+document.getElementById('sheetClose').addEventListener('click', () => {
+  document.getElementById('sheetOverlay').classList.add('hidden');
+});
+document.getElementById('sheetBg').addEventListener('click', () => {
+  document.getElementById('sheetOverlay').classList.add('hidden');
+});
+
+/* ---------------- Init ---------------- */
+renderGoals();
+renderContext();
+renderCards();
+renderBrief();
+</script>
+</body>
+</html>
