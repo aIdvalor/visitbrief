@@ -2,7 +2,7 @@
 
 > Turn patient-community noise into better clinician conversations — without pretending to give medical advice.
 
-**Live demo:** https://aidvalor.github.io/visitbrief/ _(GitHub Pages — enabled after publishing)_
+**Live demo:** [https://aidvalor.github.io/visitbrief/](https://aidvalor.github.io/visitbrief/)
 
 ![Demo](docs/demo.gif)
 
